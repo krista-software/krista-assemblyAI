@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AssemblyAI Extension Documentation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 5px;
+        }
+        h3 {
+            color: #7f8c8d;
+        }
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .operation {
+            background-color: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .note {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        ul {
+            margin: 10px 0;
+        }
+        li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>AssemblyAI Extension Documentation</h1>
+    
+    <h2>Overview</h2>
+    <p>
+        The AssemblyAI extension provides advanced audio transcription capabilities with speaker diarization,
+        sentiment analysis, and topic detection. This extension integrates with AssemblyAI's API to convert
+        audio files into accurate, searchable text with rich metadata.
+    </p>
+
+    <h2>Setup</h2>
+    <h3>Prerequisites</h3>
+    <ul>
+        <li>An AssemblyAI account with an active API key</li>
+        <li>Audio files in supported formats (WAV, MP3, MP4, M4A, FLAC, OGG)</li>
+        <li>Maximum file size: 500 MB</li>
+    </ul>
+
+    <h3>Configuration</h3>
+    <p>To configure the extension, you need to provide:</p>
+    <ul>
+        <li><strong>API Key</strong> (required): Your AssemblyAI API key</li>
+        <li><strong>Base URL</strong> (optional): Custom API endpoint (defaults to https://api.assemblyai.com/v2)</li>
+    </ul>
+
+    <h2>Available Operations</h2>
+
+    <div class="operation">
+        <h3>1. Upload Audio File</h3>
+        <p><strong>Purpose:</strong> Uploads an audio file to AssemblyAI and returns a temporary upload URL.</p>
+        <p><strong>Input:</strong></p>
+        <ul>
+            <li><code>Audio File</code> - The audio file to upload</li>
+        </ul>
+        <p><strong>Output:</strong></p>
+        <ul>
+            <li><code>Upload URL</code> - Temporary URL for the uploaded file</li>
+            <li><code>Status</code> - Success or error status</li>
+        </ul>
+    </div>
+
+    <div class="operation">
+        <h3>2. Create Transcript</h3>
+        <p><strong>Purpose:</strong> Creates a transcription job for an audio file.</p>
+        <p><strong>Input:</strong></p>
+        <ul>
+            <li><code>Audio URL</code> (required) - URL from upload or external source</li>
+            <li><code>Speaker Labels</code> (optional) - Enable speaker diarization (default: true)</li>
+            <li><code>Sentiment Analysis</code> (optional) - Enable sentiment analysis (default: true)</li>
+            <li><code>IAB Categories</code> (optional) - Enable topic detection (default: true)</li>
+            <li><code>Redact PII</code> (optional) - Enable PII redaction (default: false)</li>
+        </ul>
+        <p><strong>Output:</strong></p>
+        <ul>
+            <li><code>Transcript ID</code> - Unique identifier for the transcript</li>
+            <li><code>Status</code> - Current status (queued, processing, completed, error)</li>
+        </ul>
+    </div>
+
+    <div class="operation">
+        <h3>3. Get Transcript Status</h3>
+        <p><strong>Purpose:</strong> Checks the current status of a transcription job.</p>
+        <p><strong>Input:</strong></p>
+        <ul>
+            <li><code>Transcript ID</code> (required) - The transcript identifier</li>
+        </ul>
+        <p><strong>Output:</strong></p>
+        <ul>
+            <li><code>Status</code> - Current status (queued, processing, completed, error)</li>
+            <li><code>Message</code> - Status description</li>
+            <li><code>Error</code> - Error message if failed</li>
+        </ul>
+    </div>
+
+    <div class="operation">
+        <h3>4. Get Transcript Result</h3>
+        <p><strong>Purpose:</strong> Retrieves the complete transcription results including text, speaker information, and analysis.</p>
+        <p><strong>Input:</strong></p>
+        <ul>
+            <li><code>Transcript ID</code> (required) - The transcript identifier</li>
+        </ul>
+        <p><strong>Output:</strong></p>
+        <ul>
+            <li><code>Text</code> - Full transcription text</li>
+            <li><code>Words</code> - Array of words with timing and speaker information</li>
+            <li><code>Utterances</code> - Speaker segments with text and timing</li>
+            <li><code>Sentiment Analysis Results</code> - Sentiment for each segment</li>
+            <li><code>IAB Categories</code> - Detected topics and categories</li>
+            <li><code>Audio Duration</code> - Length of audio in seconds</li>
+            <li><code>Confidence</code> - Overall transcription confidence score</li>
+        </ul>
+    </div>
+
+    <h2>Typical Workflow</h2>
+    <ol>
+        <li><strong>Upload Audio File</strong> - Upload your audio file and receive an upload URL</li>
+        <li><strong>Create Transcript</strong> - Submit the upload URL to create a transcription job</li>
+        <li><strong>Check Status</strong> - Poll the status until it shows "completed" (typically 15-30% of audio duration)</li>
+        <li><strong>Get Results</strong> - Retrieve the full transcription with all analysis data</li>
+    </ol>
+
+    <div class="note">
+        <strong>Note:</strong> Transcription is asynchronous. After creating a transcript, you need to poll the status
+        until it completes. Processing time is typically 15-30% of the audio duration.
+    </div>
+
+    <h2>Features</h2>
+    <ul>
+        <li><strong>Speaker Diarization:</strong> Identifies and labels different speakers in the audio</li>
+        <li><strong>Sentiment Analysis:</strong> Detects positive, negative, or neutral sentiment for each segment</li>
+        <li><strong>Topic Detection:</strong> Identifies topics using IAB content taxonomy</li>
+        <li><strong>PII Redaction:</strong> Optionally redacts personally identifiable information</li>
+        <li><strong>Word-level Timestamps:</strong> Precise timing for each word</li>
+        <li><strong>High Accuracy:</strong> Industry-leading transcription accuracy</li>
+    </ul>
+
+    <h2>Supported Audio Formats</h2>
+    <ul>
+        <li>WAV (.wav)</li>
+        <li>MP3 (.mp3)</li>
+        <li>MP4 (.mp4)</li>
+        <li>M4A (.m4a)</li>
+        <li>FLAC (.flac)</li>
+        <li>OGG (.ogg)</li>
+    </ul>
+
+    <h2>Error Handling</h2>
+    <p>The extension provides detailed error messages for common issues:</p>
+    <ul>
+        <li>Invalid API key</li>
+        <li>Unsupported file format</li>
+        <li>File size exceeds limit</li>
+        <li>Transcription errors</li>
+        <li>Network connectivity issues</li>
+    </ul>
+
+    <h2>Best Practices</h2>
+    <ul>
+        <li>Use high-quality audio files for best transcription accuracy</li>
+        <li>Enable speaker labels when multiple speakers are present</li>
+        <li>Poll status every 3-5 seconds to check for completion</li>
+        <li>Store transcript IDs for future reference</li>
+        <li>Handle errors gracefully and provide user feedback</li>
+    </ul>
+
+    <h2>Support</h2>
+    <p>
+        For more information about AssemblyAI's capabilities and API documentation, visit:
+        <a href="https://www.assemblyai.com/docs" target="_blank">https://www.assemblyai.com/docs</a>
+    </p>
+</body>
+</html>
+

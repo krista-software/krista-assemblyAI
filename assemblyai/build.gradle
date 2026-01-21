@@ -1,0 +1,394 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+}
+
+apply plugin: 'java-library'
+group = 'app.krista.extensions.ai.nlp'
+
+/*
+ * Load version from properties file following brave-api pattern
+ */
+def versionProps = new Properties()
+def versionPropsFile = file('version.properties')
+if (versionPropsFile.canRead()) {
+    versionPropsFile.withInputStream { versionProps.load(it) }
+}
+
+def major = versionProps.getProperty('major', '1')
+def minor = versionProps.getProperty('minor', '0')
+def patch = versionProps.getProperty('patch', '0')
+
+// Set the version based on the properties
+version = "${major}.${minor}.${patch}"
+
+// Set the extension version system property
+System.setProperty("extensionVersion", version)
+
+/*
+ * Use extension.name for archiveBaseName, extension.version for version.
+ * Resulting jar: <extension.name>-<extension.version>.jar e.g. AssemblyAI-1.0.0.jar
+ */
+def computedBaseName = "Assembly AI"
+def computedVersion = version
+def releasePropsFile = file('release.properties')
+if (releasePropsFile.exists()) {
+    def props = new Properties()
+    releasePropsFile.withInputStream { stream -> props.load(stream) }
+    // Remove whitespace for base name, but allow dashes/underscores
+    computedBaseName = (props['extension.name'] ?: "Assembly AI").replaceAll(/\s+/, "")
+    computedVersion = props['extension.version'] ?: version
+}
+version = computedVersion
+
+compileJava.dependsOn clean
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+repositories {
+    mavenLocal()
+    maven {
+        url = "https://packages.cicd.in.antbrains.com/artifactory/libs-release"
+    }
+    mavenCentral()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-Xlint:all,-serial'
+}
+
+tasks.register('compile') {
+    dependsOn compileJava
+}
+
+// Automated version increment task following brave-api pattern
+tasks.register("updateVersion") {
+    doFirst {
+        // Increment patch version
+        def newPatch = Integer.parseInt(patch) + 1
+
+        // Update version.properties file
+        versionProps.setProperty('patch', newPatch.toString())
+        versionPropsFile.withOutputStream { versionProps.store(it, null) }
+
+        // Update the version variable
+        version = "${major}.${minor}.${newPatch}"
+
+        println "Building extension version: ${version}"
+
+        // Set system property with the updated version
+        System.clearProperty("extensionVersion")
+        System.setProperty("extensionVersion", version)
+
+        // Update the extension version in the Java file
+        updateExtensionVersion(version)
+    }
+}
+
+def updateExtensionVersion(String newVersion) {
+    def extensionFile = file('src/main/java/app/krista/extensions/ai/nlp/assemblyai/AssemblyAIExtension.java')
+    if (extensionFile.exists()) {
+        def content = extensionFile.text
+        def updatedContent = content.replaceAll(/version = "[\d\.]+"/, "version = \"${newVersion}\"")
+        extensionFile.text = updatedContent
+    }
+}
+
+// NOTE: Auto-update can be enabled by uncommenting the line below
+// This will automatically increment the patch version on every build
+// tasks.compileJava {
+//     dependsOn 'updateVersion'
+// }
+
+// Remove deprecated configuration customization
+// The implementation configuration is properly configured by the java-library plugin
+
+dependencies {
+    // Krista framework dependencies (mandatory)
+    annotationProcessor 'app.krista:extension-impl-anno-processors:1.0.117' // used to generate the extension.json
+    implementation 'app.krista:krista-apis:1.0.117' // defines the Krista Service APIs
+    implementation 'org.glassfish.hk2:hk2-api:3.0.3'
+    implementation 'org.glassfish.jersey.media:jersey-media-multipart:2.35'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+
+    // AssemblyAI specific dependencies
+    implementation 'org.codehaus.jettison:jettison:1.5.4'
+
+    // Log4j2 dependencies for LogLevelManager (compatible with Krista platform)
+    implementation 'org.apache.logging.log4j:log4j-api:2.20.0'
+    implementation 'org.apache.logging.log4j:log4j-core:2.20.0'
+
+    // Additional utilities
+    implementation 'org.apache.commons:commons-lang3:3.18.0'
+
+    // Security vulnerability fixes - force newer versions of vulnerable transitive dependencies
+    implementation 'commons-codec:commons-codec:1.17.1' // CVE-2024-48924 fix (was 1.11)
+    implementation 'io.netty:netty-all:4.1.118.Final' // CVE-2024-47535, CVE-2023-24970, CVE-2023-44487 fixes (was 4.1.100.Final)
+    implementation 'io.netty:netty-buffer:4.1.118.Final'
+    implementation 'io.netty:netty-codec:4.1.118.Final'
+    implementation 'io.netty:netty-handler:4.1.118.Final'
+    implementation 'io.netty:netty-transport:4.1.118.Final'
+    implementation 'io.netty:netty-common:4.1.118.Final'
+
+    // Test dependencies
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.mockito:mockito-core:5.8.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.8.0'
+
+    // NOTE: Real API integration tests require Krista platform runtime
+    // Jersey client and HK2 are provided by the Krista platform
+    // Validation tests (null checks, file validation) work in standalone mode
+}
+
+tasks.register('createSourceDir', Exec) {
+    dependsOn processResources
+    commandLine "mkdir", "-p", "$projectDir/build/classes/java/main/META-INF/project"
+}
+
+tasks.register('copyGradleFile', Exec) {
+    dependsOn createSourceDir
+    commandLine "cp", "$projectDir/build.gradle", "$projectDir/build/classes/java/main/META-INF/project/build.gradle"
+}
+
+tasks.register('includeSources', Exec) {
+    dependsOn copyGradleFile
+    commandLine "cp", "-r", "$projectDir/src", "$projectDir/build/classes/java/main/META-INF/project/src"
+}
+
+jar {
+    archiveBaseName.set(computedBaseName)
+
+    doFirst {
+        println "Waiting half second for generateReleaseProperties to complete..."
+        Thread.sleep(500)
+        println "Wait complete, proceeding with jar creation..."
+        def jarReleasePropsFile = file('release.properties')
+        if (jarReleasePropsFile.exists()) {
+            def props = new Properties()
+            jarReleasePropsFile.withInputStream { stream -> props.load(stream) }
+            def actualBaseName = (props['extension.name'] ?: "Assembly AI").replaceAll(/\s+/, "")
+            def actualVersion = props['extension.version'] ?: "local"
+
+            println "Using jar name from release.properties: ${actualBaseName}-${actualVersion}.jar"
+
+            // Update the archive base name and version at execution time
+            archiveBaseName.set(actualBaseName)
+            archiveVersion.set(actualVersion)
+        } else {
+            println "release.properties not found, using fallback values"
+        }
+    }
+
+    manifest {}
+    from {
+        configurations.runtimeClasspath.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
+    duplicatesStrategy = "exclude"
+}
+
+testing {
+    suites {
+        test {
+            useJUnitJupiter()
+        }
+    }
+}
+
+test {
+    // Add these settings to help diagnose test issues
+    testLogging {
+        events = ["passed", "skipped", "failed"]
+        exceptionFormat = "full"
+    }
+
+    // Enable experimental support for Java 21+ in Byte Buddy
+    jvmArgs '-Dnet.bytebuddy.experimental=true'
+
+    // Suppress JVM class data sharing warning
+    jvmArgs '-Xshare:off'
+
+    // Use a different mocking strategy
+    systemProperty 'mockito.mock.maker', 'subclass'
+
+    // Increase memory if needed
+    maxHeapSize = "1G"
+}
+
+
+import java.util.regex.Pattern
+
+tasks.register('generateReleaseProperties') {
+    group = 'build'
+    description = 'Generates release.properties file with extension version and domain information'
+
+    doLast {
+        def extensionFilePath = 'src/main/java/app/krista/extensions/ai/nlp/assemblyai/catalog/AssemblyAIExtension.java'
+        def areaFilePaths = [
+            'src/main/java/app/krista/extensions/ai/nlp/assemblyai/catalog/area/TranscriptionArea.java'
+        ]
+
+        def extensionFile = file(extensionFilePath)
+
+        if (!extensionFile.exists()) {
+            throw new GradleException("Extension file not found: ${extensionFilePath}")
+        }
+
+        def properties = new Properties()
+        // Pre-compile the regex pattern for better performance
+        def keyValuePattern = Pattern.compile(/(\w+)\s*=\s*"([^"]+)"/)
+
+        // Extract Extension annotation information
+        extractAnnotationInfo(extensionFile, "@Extension", keyValuePattern) { key, value ->
+            if (key == "version") {
+                properties.setProperty("extension.version", value)
+                logger.lifecycle("Found extension version: ${value}")
+            } else if (key == "name") {
+                properties.setProperty("extension.name", value)
+                logger.lifecycle("Found extension name: ${value}")
+            }
+        }
+
+        // Set default extension name if not found
+        if (!properties.getProperty('extension.name')) {
+            properties.setProperty("extension.name", "Assembly AI")
+            logger.lifecycle("Set default extension name: Assembly AI")
+        }
+
+        // Try to extract Domain annotation information from area files
+        def domainFound = false
+        def ecosystemFound = false
+
+        // Check all area files for @Domain annotations
+        areaFilePaths.each { areaFilePath ->
+            def areaFile = file(areaFilePath)
+            if (areaFile.exists()) {
+                extractAnnotationInfo(areaFile, "@Domain", keyValuePattern) { key, value ->
+                    if (key == "name" && !domainFound) {
+                        properties.setProperty("domain.name", value)
+                        logger.lifecycle("Found domain name: ${value} from ${areaFile.name}")
+                        domainFound = true
+                    } else if (key == "ecosystemName" && !ecosystemFound) {
+                        properties.setProperty("ecosystem.name", value)
+                        logger.lifecycle("Found ecosystem name: ${value} from ${areaFile.name}")
+                        ecosystemFound = true
+                    }
+                }
+            } else {
+                logger.lifecycle("Area file not found: ${areaFilePath}")
+            }
+        }
+
+        if (!properties.getProperty('extension.version')) {
+            // Set default version if not found in annotations
+            properties.setProperty("extension.version", "1.0.0")
+            logger.lifecycle("Set default extension version: 1.0.0")
+        }
+
+        // Set default values if not found in annotations
+        if (!properties.getProperty('domain.name')) {
+            properties.setProperty("domain.name", "AI Services")
+            logger.lifecycle("Set default domain name: AI Services")
+        }
+
+        if (!properties.getProperty('ecosystem.name')) {
+            properties.setProperty("ecosystem.name", "IT")
+            logger.lifecycle("Set default ecosystem name: IT")
+        }
+
+        def releasePropertiesFile = file('release.properties')
+        def content = properties.collect { key, value -> "${key}=${value}" }.join('\n')
+        releasePropertiesFile.text = content + '\n'
+        logger.lifecycle("Generated release.properties with content:\n${content}")
+    }
+}
+
+def extractAnnotationInfo(File file, String annotationName, Pattern keyValuePattern, Closure processProperty) {
+    StringBuilder annotationText = new StringBuilder()
+    boolean inAnnotation = false
+    file.eachLine { line ->
+        line = line.trim()
+        if (line.contains(annotationName)) {
+            inAnnotation = true
+            annotationText.setLength(0) // Reset the buffer when starting a new annotation
+            annotationText.append(line)
+        } else if (inAnnotation) {
+            annotationText.append(line)
+        }
+
+        if (inAnnotation && line.contains(")")) {
+            inAnnotation = false
+            def matcher = keyValuePattern.matcher(annotationText.toString())
+            while (matcher.find()) {
+                def key = matcher.group(1)
+                def value = matcher.group(2)
+                processProperty.call(key, value)
+            }
+        }
+    }
+}
+
+tasks.withType(Test).configureEach {
+    doFirst {
+        def byteBuddyAgent = configurations.testRuntimeClasspath.find { it.name.contains('byte-buddy-agent') }
+        if (byteBuddyAgent) {
+            jvmArgs "-javaagent:${byteBuddyAgent}"
+        }
+    }
+}
+
+// Add a task to create the mockito-extensions directory and file
+tasks.register('createMockitoExtensions') {
+    doLast {
+        def mockitoDir = file("${projectDir}/src/test/resources/mockito-extensions")
+        mockitoDir.mkdirs()
+        def mockMakerFile = file("${mockitoDir}/org.mockito.plugins.MockMaker")
+        mockMakerFile.text = 'mock-maker-inline\n'
+        println "Created mockito-extensions directory and MockMaker file"
+    }
+}
+
+// Make sure the test task depends on createMockitoExtensions
+tasks.named('test') {
+    dependsOn tasks.named('createMockitoExtensions')
+}
+
+// Make sure the jar task doesn't depend on test
+tasks.named('jar') {
+    // Remove dependency on test if it exists
+    // Keep other dependencies
+    dependsOn tasks.named('generateReleaseProperties')
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            afterEvaluate {
+                // Use the same baseName for artifactId
+                artifactId = computedBaseName
+                groupId = rootProject.group
+            }
+        }
+    }
+    repositories {
+        mavenLocal()
+        maven {
+            credentials {
+                username = rootProject.properties['MAVEN_USERNAME']
+                password = rootProject.properties['MAVEN_PASSWORD']
+            }
+            authentication {
+                basic(BasicAuthentication)
+            }
+            url = rootProject.properties['MAVEN_UPLOAD_URL']
+        }
+    }
+}

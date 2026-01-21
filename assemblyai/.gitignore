@@ -1,0 +1,9 @@
+build
+.idea
+.gradle
+.augment
+gradlew.bat
+gradlew
+.settings
+.vscode
+out
