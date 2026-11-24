@@ -1,192 +1,265 @@
-# Configuring AssemblyAI Extension in Krista
+# Extension Configuration
 
-This guide walks you through configuring the AssemblyAI extension in your Krista environment.
+This guide provides step-by-step instructions for configuring the AssemblyAI extension in Krista.
+
+## Overview
+
+The AssemblyAI extension requires minimal configuration - only an API key is needed to connect to AssemblyAI's transcription services. The extension automatically handles all other settings including the API endpoint, polling intervals, and feature enablement.
 
 ## Prerequisites
 
 Before configuring the extension, ensure you have:
+
 - [ ] An active AssemblyAI account
-- [ ] Your AssemblyAI API key (see [Obtaining API Key](pages/obtainingApiKey.md))
+- [ ] Your AssemblyAI API key ([How to obtain](pages/ObtainingApiKey.md))
 - [ ] Access to Krista administration console
 - [ ] Appropriate permissions to configure extensions in Krista
+
+## Configuration Parameters
+
+The extension requires the following configuration parameter:
+
+| Parameter | Type | Required | Description | Example |
+|-----------|------|----------|-------------|---------|
+| **API Key** | Text (Secured) | Yes | Your AssemblyAI API key for authentication | `f4a4eb8c18db4fb280606244e0d68421` |
+
+### API Key
+
+- **Purpose**: Authenticates all requests to the AssemblyAI API
+- **Format**: 32-character hexadecimal string
+- **Security**: Stored encrypted in Krista's credential store
+- **Scope**: Provides access to all AssemblyAI transcription features
+- **Obtain**: See [Obtaining API Key](pages/ObtainingApiKey.md)
+
+**Note**: The extension uses the default AssemblyAI API endpoint (`https://api.assemblyai.com/v2`) automatically. No additional endpoint configuration is required.
 
 ## Configuration Steps
 
 ### Step 1: Access Extension Configuration
 
 1. Log in to your Krista administration console
-2. Navigate to **Extensions** or **Integrations**
-3. Locate **AssemblyAI Extension** in the list
-4. Click **Configure** or **Settings**
+2. Navigate to **Extensions** or **Integrations** section
+3. Locate **AssemblyAI** in the extension list
+4. Click **Configure** or **Settings** to open the configuration panel
 
-### Step 2: Enter API Credentials
-
-Configure the following required settings:
-
-| Setting Name | Description | Example Value | Required |
-|--------------|-------------|---------------|----------|
-| **API Key** | Your AssemblyAI API key | `f4a4eb8c18db4fb280606244e0d68421` | Yes |
-
-#### API Key Configuration
+### Step 2: Enter API Key
 
 1. In the **API Key** field, paste your AssemblyAI API key
-2. The key should be 32 characters long (hexadecimal format)
-3. Click **Save** or **Apply**
+2. Ensure there are no extra spaces before or after the key
+3. The key should be exactly 32 characters long
+4. Click **Save** or **Apply** to store the configuration
 
-**Important**: The API key is stored securely in Krista's credential store and is encrypted at rest.
+**Security Note**: The API key is automatically encrypted when saved and is never exposed in logs or error messages.
 
-**Note**: The extension uses the default AssemblyAI API endpoint (`https://api.assemblyai.com/v2`) automatically.
+### Step 3: Test Connection
 
-### Step 3: Test the Connection
+After saving the configuration:
 
-After configuring the credentials:
+1. Click the **Test Connection** button
+2. The extension will validate the API key by making a test request to AssemblyAI
+3. Wait for the connection test to complete (typically 2-5 seconds)
+4. Verify you see a success message
 
-1. Click **Test Connection** button (if available)
-2. The extension will attempt to authenticate with AssemblyAI
-3. Verify you see a success message
-4. If the test fails, review the error message and verify your API key
-
-
+**What the test does**:
+- Validates API key format
+- Verifies network connectivity to AssemblyAI API
+- Confirms API key is active and has proper permissions
+- Checks that the AssemblyAI service is accessible
 
 ### Step 4: Verify Extension Status
 
-1. Check that the extension status shows as **Active** or **Enabled**
-2. Verify the configuration is saved successfully
-3. Review any warning or informational messages
+1. Confirm the extension status shows as **Active** or **Enabled**
+2. Verify the configuration was saved successfully
+3. Review any informational messages or warnings
+4. Document the configuration for your team
 
 ## Environment-Specific Configuration
 
 ### Development Environment
 
-```
-API Key: [Development API Key]
+For development and testing:
 
 ```
+API Key: [Development API Key]
+```
+
+**Recommendations**:
+- Use a separate API key for development
+- Monitor usage to stay within free tier limits
+- Test with small audio files to conserve quota
+- Document the development API key location
 
 ### Production Environment
 
+For production deployments:
+
 ```
 API Key: [Production API Key]
-
 ```
 
-**Best Practice**: Use separate API keys for each environment to:
-- Track usage separately
+**Recommendations**:
+- Use a dedicated production API key
+- Implement API key rotation schedule
+- Monitor usage and set up alerts
+- Ensure appropriate plan limits for production volume
+- Document key rotation procedures
+
+**Best Practice**: Always use separate API keys for each environment to:
+- Track usage independently
 - Isolate development from production
-- Enable independent key rotation
+- Enable environment-specific key rotation
 - Prevent accidental production usage in development
+- Simplify troubleshooting and auditing
 
 ## Configuration Validation
 
-After configuration, verify the following:
+### Validation Checklist
 
-### Checklist
+After configuration, verify the following:
 
 - [ ] API key is configured and saved
 - [ ] Test connection succeeds
 - [ ] Extension status is Active/Enabled
-- [ ] Polling settings are appropriate for your use case
 - [ ] Configuration is documented for your team
+- [ ] Team members know how to access the configuration
+- [ ] API key rotation schedule is established
 
 ### Test with Sample Request
 
-Create a simple test workflow:
+Validate the configuration with a simple test:
 
-1. Use the **"Upload Audio File"** catalog request
-2. Upload a small test audio file (< 1 minute)
-3. Use the **"Create Transcript"** request with the upload URL
-4. Use the **"Get Transcript Status"** request to check progress
-5. Use the **"Get Transcript Result"** to retrieve the transcript
+1. Create a test workflow in Krista
+2. Add the **"Transcribe Call"** catalog request
+3. Upload a small test audio file (< 1 minute, WAV or MP3 format)
+4. Set **Redact PII** to `false`
+5. Execute the workflow
+6. Verify you receive a successful transcription result
 
-If all steps succeed, your configuration is correct!
+**Expected Results**:
+- Transcription Successful: `true`
+- Transcript Text: Contains the transcribed audio
+- Sentiment: Shows sentiment percentages
+- Topic Detected: May show detected topics (or "No topics detected")
+- Transcript File: Contains formatted transcript
 
-## Troubleshooting Configuration Issues
+If all results are as expected, your configuration is correct!
+
+## Troubleshooting
 
 ### API Key Not Accepted
 
-**Symptoms**: "Invalid API key" or "Authentication failed" errors
+**Symptoms**:
+- "Invalid API key" error message
+- "Authentication failed" error
+- Test connection fails with 401 Unauthorized
+
+**Possible Causes**:
+- API key copied incorrectly (extra spaces, missing characters)
+- API key was regenerated in AssemblyAI dashboard
+- AssemblyAI account is inactive or suspended
+- API key belongs to a different account
 
 **Solutions**:
-1. Verify the API key is copied correctly (no extra spaces)
+1. Verify the API key is copied correctly without extra spaces
 2. Check if the key was regenerated in AssemblyAI dashboard
-3. Ensure the AssemblyAI account is active
-4. Try generating a new API key
+3. Ensure the AssemblyAI account is active and in good standing
+4. Try generating a new API key from AssemblyAI dashboard
+5. Verify you're using the correct AssemblyAI account
 
 ### Connection Test Fails
 
-**Symptoms**: "Connection failed" or "Unable to reach API" errors
+**Symptoms**:
+- "Connection failed" error message
+- "Unable to reach API" error
+- Timeout during connection test
+
+**Possible Causes**:
+- Network connectivity issues
+- Firewall blocking HTTPS traffic to AssemblyAI
+- Proxy configuration issues
+- AssemblyAI service outage
 
 **Solutions**:
-1. Verify network connectivity from Krista server
-2. Check firewall rules allow HTTPS to `api.assemblyai.com`
-3. Verify proxy settings if applicable
+1. Verify network connectivity from Krista server to internet
+2. Check firewall rules allow HTTPS (port 443) to `api.assemblyai.com`
+3. Verify proxy settings if your network uses a proxy
 4. Check AssemblyAI service status: https://status.assemblyai.com/
+5. Test connectivity using curl: `curl -H "authorization: YOUR_API_KEY" https://api.assemblyai.com/v2/transcript`
 
 ### Configuration Not Saving
 
-**Symptoms**: Settings revert after saving
+**Symptoms**:
+- Settings revert to previous values after saving
+- "Save failed" error message
+- Changes don't persist after page refresh
+
+**Possible Causes**:
+- Insufficient permissions in Krista
+- Validation errors in the configuration form
+- Database connection issues
+- Browser cache issues
 
 **Solutions**:
-1. Verify you have admin permissions in Krista
-2. Check for validation errors in the form
-3. Review Krista logs for save errors
-4. Try clearing browser cache and retry
-
-### Polling Timeouts
-
-**Symptoms**: "Transcription timed out" errors for long audio files
-
-**Solutions**:
-1. Increase **Max Polling Attempts** (e.g., from 200 to 300)
-2. Verify the audio file isn't corrupted
-3. Check AssemblyAI dashboard for processing status
-4. Consider splitting very long audio files
+1. Verify you have administrator permissions in Krista
+2. Check for validation error messages in the form
+3. Review Krista server logs for save errors
+4. Try clearing browser cache and cookies
+5. Try using a different browser
+6. Contact Krista support if issue persists
 
 ## Security Best Practices
 
 ### Credential Management
 
-1. **Never hardcode API keys** in workflows or scripts
-2. **Use Krista's credential store** for all sensitive data
-3. **Rotate API keys** every 90 days
-4. **Limit access** to extension configuration to authorized personnel
-5. **Audit configuration changes** regularly
+1. **Never hardcode API keys** in workflows, scripts, or code
+2. **Use Krista's credential store** for all sensitive configuration
+3. **Rotate API keys regularly** (recommended: every 90 days)
+4. **Limit access** to extension configuration to authorized personnel only
+5. **Audit configuration changes** regularly and maintain change log
+6. **Document key rotation procedures** for your team
 
 ### Network Security
 
-1. **Use HTTPS only** for all API communication
-2. **Configure firewall rules** to allow only necessary traffic
+1. **Use HTTPS only** for all API communication (enforced by extension)
+2. **Configure firewall rules** to allow only necessary outbound traffic
 3. **Enable IP whitelisting** if available in your AssemblyAI plan
-4. **Monitor API usage** for unusual patterns
+4. **Monitor API usage** for unusual patterns or anomalies
+5. **Implement rate limiting** in your workflows if needed
 
 ### Access Control
 
-1. **Implement role-based access** for extension configuration
-2. **Log all configuration changes** with user attribution
-3. **Review access logs** regularly
-4. **Revoke access** for users who no longer need it
+1. **Implement role-based access control** for extension configuration
+2. **Log all configuration changes** with user attribution and timestamps
+3. **Review access logs** regularly for unauthorized access attempts
+4. **Revoke access immediately** for users who no longer need it
+5. **Use separate accounts** for different teams or departments
 
-## Getting Help
+## Advanced Configuration
 
-### Documentation Resources
+### Polling Configuration
 
-- [AssemblyAI API Documentation](https://www.assemblyai.com/docs)
-- [Krista Extension Documentation](/)
-- [Transcribe Call](pages/TranscribeCall.md)
+The extension uses built-in polling to check transcription status:
 
-### Support Channels
+- **Polling Interval**: 3 seconds (hardcoded, optimal for most use cases)
+- **Maximum Attempts**: 200 attempts (10 minutes total)
+- **Timeout Calculation**: 200 attempts × 3 seconds = 600 seconds (10 minutes)
 
-- **Krista Support**: For extension configuration issues
-- **AssemblyAI Support**: For API key and account issues
-- **Community Forums**: For general questions and best practices
+**Note**: These settings are optimized for typical audio files and cannot be changed through configuration. For very long audio files (> 1 hour), the extension will continue polling up to the maximum timeout.
 
-### Providing Information for Support
+### API Endpoint
 
-When contacting support, include:
-- Extension version
-- Krista version
-- Error messages (with sensitive data redacted)
-- Steps to reproduce the issue
-- Configuration settings (without API key)
-- Relevant log excerpts
+The extension uses the default AssemblyAI API endpoint:
+
+- **Base URL**: `https://api.assemblyai.com/v2`
+- **Upload Endpoint**: `/upload`
+- **Transcript Endpoint**: `/transcript`
+
+**Note**: The API endpoint is hardcoded and cannot be changed. This ensures compatibility with AssemblyAI's production service.
+
+## Related Pages
+
+- [Obtaining API Key](pages/ObtainingApiKey.md) - How to get your AssemblyAI API key
+- [Authentication](pages/Authentication.md) - Details about API key authentication
+- [Transcribe Call](pages/TranscribeCall.md) - Using the transcription feature
+- [Home](../README.md) - Extension overview and documentation
 

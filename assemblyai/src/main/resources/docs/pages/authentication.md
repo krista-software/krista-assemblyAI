@@ -157,3 +157,9 @@ The AssemblyAI API key provides access to:
 - [ ] Incident response plan for compromised keys
 - [ ] Regular security audits scheduled
 
+## Related Pages
+
+- [Obtaining API Key](pages/ObtainingApiKey.md)
+- [Extension Configuration](pages/ExtensionConfiguration.md)
+- [Transcribe Call](pages/TranscribeCall.md)
+- [Home](../README.md)

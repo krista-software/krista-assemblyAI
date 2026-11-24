@@ -18,7 +18,7 @@ To use the Krista AssemblyAI extension, you need an API key from AssemblyAI.
 2. You will be redirected to the AssemblyAI Dashboard
 3. The dashboard shows your usage statistics and API access
 
-![AssemblyAI Home Page](../_media/HomePage.png)
+![AssemblyAI Home Page](../_media/ObtainingApiKey_HomePage.png)
 
 ## Step 3: Locate Your API Key
 
@@ -26,7 +26,7 @@ To use the Krista AssemblyAI extension, you need an API key from AssemblyAI.
 2. Your API key is displayed on the main dashboard page
 3. The API key format looks like: `f4a4eb8c18db4fb280606244e0d68421`
 
-![API Key Location](../_media/API_Key.png)
+![API Key Location](../_media/ObtainingApiKey_API_Key.png)
 
 ## Step 4: Copy Your API Key
 

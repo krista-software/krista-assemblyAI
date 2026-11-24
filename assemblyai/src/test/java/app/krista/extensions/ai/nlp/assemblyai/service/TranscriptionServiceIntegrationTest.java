@@ -30,7 +30,6 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.EnabledIf;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -82,9 +81,12 @@ public class TranscriptionServiceIntegrationTest {
     public void setup() throws IOException {
         LOG.info("Setting up TranscriptionService integration tests");
         
-        // Load test configuration
+        // Load test configuration from classpath
         testConfig = new Properties();
-        try (InputStream input = new FileInputStream("src/test/resources/config.properties")) {
+        try (InputStream input = getClass().getClassLoader().getResourceAsStream("config.properties")) {
+            if (input == null) {
+                throw new IOException("config.properties not found in classpath");
+            }
             testConfig.load(input);
             LOG.info("Loaded test configuration from config.properties");
         }
